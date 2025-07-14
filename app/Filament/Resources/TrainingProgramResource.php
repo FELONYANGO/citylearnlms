@@ -36,6 +36,8 @@ class TrainingProgramResource extends Resource
         return $form->schema([
             Forms\Components\Section::make('Basic Information')
                 ->schema([
+
+
                     TextInput::make('title')
                         ->required()
                         ->maxLength(255)
@@ -80,7 +82,9 @@ class TrainingProgramResource extends Resource
                         ]),
 
                     Select::make('trainer_id')
-                        ->relationship('trainer', 'name')
+                        ->relationship('trainer', 'name', function ($query) {
+                            return $query->where('role', 'trainer');
+                        })
                         ->searchable()
                         ->preload()
                         ->label('Trainer'),
@@ -88,9 +92,16 @@ class TrainingProgramResource extends Resource
                     Select::make('organization_id')
                         ->relationship('organization', 'name')
                         ->searchable()
+                        ->preload(),
+                          Select::make('created_by')
+                        ->relationship('createdBy', 'name', function ($query) {
+                            return $query->whereIn('role', ['admin', 'trainer', 'org_rep']);
+                        })
+                        ->searchable()
                         ->preload()
-                        //full width
-                        ->columnSpanFull(),
+                        ->required()
+                        ->default(auth()->id())
+                        ->label('Created By'),
                 ])->columns(2),
 
             Forms\Components\Section::make('Program Details')
