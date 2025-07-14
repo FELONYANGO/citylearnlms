@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply text-gray-800;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-semibold;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply px-4 py-2 rounded-md font-semibold transition-colors duration-200;
+    }
+    .btn-primary {
+        @apply bg-primary text-white hover:bg-primary-dark;
+    }
+    .btn-secondary {
+        @apply bg-secondary text-white hover:bg-secondary-dark;
+    }
+    .btn-outline {
+        @apply border-2 border-current;
+    }
+    .nav-link {
+        @apply text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors duration-200;
+    }
+    .nav-link-active {
+        @apply text-primary font-semibold;
+    }
+    .card {
+        @apply bg-white rounded-lg shadow-md overflow-hidden;
+    }
+    .card-body {
+        @apply p-6;
+    }
+    .section-title {
+        @apply text-3xl font-bold text-gray-900 mb-4;
+    }
+    .section-subtitle {
+        @apply text-lg text-gray-600 mb-8;
+    }
+}
+
+/* Custom Styles */
+.stats-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
+}
+
+.stats-card {
+    @apply bg-white p-6 rounded-lg shadow-sm text-center;
+}
+
+.stats-number {
+    @apply text-4xl font-bold text-primary mb-2;
+}
+
+.stats-label {
+    @apply text-gray-600;
+}
+
+.program-card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:transform hover:scale-105;
+}
+
+.program-image {
+    @apply w-full h-48 object-cover;
+}
+
+.program-content {
+    @apply p-6;
+}
+
+.testimonial-card {
+    @apply bg-white p-6 rounded-lg shadow-sm;
+}
+
+.pricing-card {
+    @apply bg-white p-8 rounded-lg shadow-sm border transition-all duration-300;
+}
+
+.pricing-card-popular {
+    @apply border-2 border-primary relative transform scale-105;
+}
+
+.pricing-badge {
+    @apply absolute top-0 right-0 bg-primary text-white px-4 py-1 rounded-bl-lg text-sm;
+}
+
+.feature-list {
+    @apply space-y-4 mb-8;
+}
+
+.feature-item {
+    @apply flex items-center;
+}
+
+.feature-check {
+    @apply text-green-500 mr-2;
+}
