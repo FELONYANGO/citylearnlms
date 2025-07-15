@@ -16,17 +16,28 @@ class Payment extends Model
         'currency',
         'payment_method',
         'status',
-        'meta_data',
         'phone_number',
         'transaction_reference',
-        'payment_response'
+        'payment_response',
+        'meta_data'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'meta_data' => 'json',
-        'payment_response' => 'json',
+        'payment_response' => 'json'
     ];
+
+    // Status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_FAILED = 'failed';
+    const STATUS_CANCELLED = 'cancelled';
+
+    // Payment methods
+    const METHOD_MPESA = 'mpesa';
+    const METHOD_CARD = 'card';
 
     /**
      * Get the order associated with the payment.

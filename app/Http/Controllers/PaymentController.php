@@ -55,6 +55,7 @@ class PaymentController extends Controller
      */
     public function initiate(Request $request, Order $order)
     {
+
         if ($order->user_id !== Auth::id()) {
             abort(403, 'You are not authorized to access this order.');
         }

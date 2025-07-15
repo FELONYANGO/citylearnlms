@@ -120,7 +120,7 @@
                                 Continue Learning
                             </a>
                             @else
-                            <a href="{{ route('payments.checkout', $course) }}"
+                            <a href="{{ route('courses.checkout', $course) }}"
                                 class="block w-full bg-orange-500 text-white py-4 px-6 rounded-2xl font-semibold text-lg hover:bg-orange-600 transition-all duration-300 shadow-lg">
                                 <i class="fas fa-credit-card mr-2"></i>
                                 Complete Payment
