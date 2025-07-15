@@ -39,4 +39,11 @@ class Quiz extends Model
     {
         return $this->hasMany(UserQuizAttempt::class);
     }
+
+    public function exams()
+    {
+        return $this->belongsToMany(Exam::class, 'exam_quizzes')
+            ->withPivot('order', 'weight')
+            ->orderByPivot('order');
+    }
 }

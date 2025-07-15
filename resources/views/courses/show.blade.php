@@ -26,7 +26,7 @@
                     </h1>
 
                     <p class="text-xl text-white/90 mb-8 leading-relaxed">
-                        {{ $course->description }}
+                        {!! strip_tags($course->description) !!}
                     </p>
 
                     <!-- Course Stats -->
@@ -190,7 +190,8 @@
                         <div id="overview-tab" class="tab-content">
                             <div class="prose max-w-none">
                                 <h2 class="text-2xl font-bold text-gray-900 mb-6">About This Course</h2>
-                                <p class="text-gray-600 text-lg leading-relaxed mb-8">{{ $course->description }}</p>
+                                <div class="text-gray-600 text-lg leading-relaxed mb-8">{!! $course->description !!}
+                                </div>
 
                                 @if($course->objectives)
                                 <div class="mb-8">

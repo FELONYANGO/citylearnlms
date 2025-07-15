@@ -105,7 +105,6 @@ class MpesaService
             $expectedAmount = $purchasable->price ?? $purchasable->total_fee;
 
             if ($callbackData->status === 0) {
-                // Get the paid amount from callback metadata
                 $paidAmount = collect($callbackData->CallbackMetadata->Item)
                     ->where('Name', 'Amount')
                     ->first()->Value ?? 0;

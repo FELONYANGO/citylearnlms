@@ -25,7 +25,7 @@
                 </h1>
 
                 <p class="text-xl text-white/90 mb-12 leading-relaxed max-w-3xl mx-auto">
-                    {{ $program->description }}
+                    {!! strip_tags($program->description) !!}
                 </p>
 
                 <!-- Quick Stats -->
@@ -80,7 +80,7 @@
                     <a href="{{ route('programs.learn', $program) }}"
                         class="block w-full bg-white text-[#2B593F] py-4 px-6 rounded-2xl font-semibold text-lg hover:bg-gray-100 transition-all duration-300 shadow-lg">
                         <i class="fas fa-play mr-2"></i>
-                        Continue Learning
+                        All Courses
                     </a>
                     @else
                     <form action="{{ route('programs.enroll', $program) }}" method="POST">
@@ -154,7 +154,8 @@
                         <div id="overview-tab" class="tab-content">
                             <div class="prose max-w-none">
                                 <h2 class="text-2xl font-bold text-gray-900 mb-6">About This Program</h2>
-                                <p class="text-gray-600 text-lg leading-relaxed mb-8">{{ $program->description }}</p>
+                                <div class="text-gray-600 text-lg leading-relaxed mb-8">{!! $program->description !!}
+                                </div>
 
                                 @if($program->objectives && is_array($program->objectives))
                                 <div class="mb-8">
@@ -243,66 +244,35 @@
                             @endphp
 
                             <div class="space-y-8">
-                                @foreach($program->courses->groupBy('level') as $level => $courses)
-                                <div class="border border-gray-200 rounded-2xl overflow-hidden">
-                                    <div class="bg-gradient-to-r from-[#2B593F] to-[#1E4230] p-6">
-                                        <h3 class="text-xl font-semibold text-white flex items-center">
-                                            <div
-                                                class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                                                {{ $level }}
-                                            </div>
-                                            Level {{ $level }}: {{ $levelNames[$level] ?? 'Unknown' }}
-                                        </h3>
+                                @foreach($program->courses->take(2) as $course)
+                                <div class="bg-white rounded-xl p-6 hover:bg-gray-50 transition-all duration-300">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-lg font-semibold text-gray-900">{{ $course->title }}</h3>
+                                        <a href="{{ route('courses.show', $course) }}"
+                                            class="inline-flex items-center justify-center px-4 py-2 bg-[#2B593F] text-white rounded-xl hover:bg-[#1E4230] transition-all duration-300">
+                                            <i class="fas fa-play mr-2"></i>
+                                            Start
+                                        </a>
                                     </div>
-
-                                    <div class="p-6">
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            @foreach($courses as $course)
-                                            <div class="bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors">
-                                                <div class="flex items-start justify-between mb-4">
-                                                    <div class="flex-1">
-                                                        <h4 class="font-semibold text-gray-900 mb-2">{{ $course->title
-                                                            }}</h4>
-                                                        <p class="text-sm text-gray-600 mb-3">{{ $course->description }}
-                                                        </p>
-                                                        <div class="flex items-center text-sm text-gray-500">
-                                                            <i class="fas fa-clock mr-1"></i>
-                                                            <span>{{ $course->duration }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-4">
-                                                        @if($userState['hasValidPayment'])
-                                                        <a href="{{ route('courses.show', $course) }}"
-                                                            class="inline-flex items-center px-4 py-2 bg-[#2B593F] text-white rounded-lg hover:bg-[#234732] transition-colors">
-                                                            <i class="fas fa-play mr-2"></i>
-                                                            Start
-                                                        </a>
-                                                        @else
-                                                        <div
-                                                            class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-600 rounded-lg">
-                                                            <i class="fas fa-lock mr-2"></i>
-                                                            Locked
-                                                        </div>
-                                                        @endif
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex items-center text-sm text-gray-500">
-                                                        <i class="fas fa-list mr-1"></i>
-                                                        <span>{{ $course->curriculumItems->count() }} lessons</span>
-                                                    </div>
-                                                    <div class="flex items-center text-sm text-gray-500">
-                                                        <i class="fas fa-users mr-1"></i>
-                                                        <span>{{ $course->enrollment_count }} students</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @endforeach
-                                        </div>
+                                    <div class="text-gray-600">{!! strip_tags($course->description) !!}</div>
+                                    <div class="mt-4 flex items-center text-sm text-gray-500">
+                                        <i class="fas fa-book-open mr-2"></i>
+                                        <span>{{ $course->curriculumItems->count() }} lessons</span>
+                                        <i class="fas fa-users mx-2"></i>
+                                        <span>{{ $course->enrollments->count() }} students</span>
                                     </div>
                                 </div>
                                 @endforeach
+
+                                @if($program->courses->count() > 2)
+                                <div class="text-center mt-8">
+                                    <a href="{{ route('programs.learn', $program) }}"
+                                        class="inline-flex items-center justify-center px-8 py-3 bg-white text-[#2B593F] rounded-xl border-2 border-[#2B593F] hover:bg-[#2B593F] hover:text-white transition-all duration-300">
+                                        <i class="fas fa-graduation-cap mr-2"></i>
+                                        All Program Courses
+                                    </a>
+                                </div>
+                                @endif
                             </div>
                         </div>
 
