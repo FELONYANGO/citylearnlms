@@ -133,8 +133,8 @@ class QuizzesRelationManager extends RelationManager
                                     ->relationship()
                                     ->schema([
                                         TextInput::make('option_text')
-                                            ->required()
-                                            ->maxLength(255),
+                    ->required()
+                    ->maxLength(255),
 
                                         Toggle::make('is_correct')
                                             ->label('Correct Answer')
