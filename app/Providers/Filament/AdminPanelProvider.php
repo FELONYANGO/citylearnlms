@@ -44,6 +44,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\TopPerformingCoursesWidget::class,
                 \App\Filament\Widgets\QuizPerformanceWidget::class,
                 \App\Filament\Widgets\SystemHealthWidget::class,
+                \App\Filament\Widgets\CertificateManagementWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

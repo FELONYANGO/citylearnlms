@@ -31,6 +31,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\DatePicker;
 use Carbon\Carbon;
+use App\Services\CertificateService;
 
 class EnrollmentResource extends Resource
 {
@@ -40,6 +41,18 @@ class EnrollmentResource extends Resource
     protected static ?string $navigationGroup = 'User Management';
     protected static ?int $navigationSort = 4;
     protected static ?string $recordTitleAttribute = 'id';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return Enrollment::where('status', Enrollment::STATUS_COMPLETED)
+            ->where('certificate_issued', false)
+            ->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
 
     public static function form(Form $form): Form
     {
@@ -293,6 +306,12 @@ class EnrollmentResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->placeholder('Never'),
+
+                TextColumn::make('certificate_number')
+                    ->label('Certificate #')
+                    ->searchable()
+                    ->placeholder('Not issued')
+                    ->visible(fn() => true),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -355,19 +374,48 @@ class EnrollmentResource extends Resource
                         $record->markAsCompleted();
                     })
                     ->visible(fn(Enrollment $record) => $record->status !== Enrollment::STATUS_COMPLETED),
+
                 Tables\Actions\Action::make('issue_certificate')
                     ->label('Issue Certificate')
                     ->icon('heroicon-o-academic-cap')
                     ->color('primary')
                     ->requiresConfirmation()
                     ->action(function (Enrollment $record) {
-                        $certificateNumber = 'CERT-' . strtoupper(uniqid());
-                        $record->issueCertificate($certificateNumber);
+                        $certificateService = app(CertificateService::class);
+                        $certificateService->issueCertificate($record);
                     })
                     ->visible(
                         fn(Enrollment $record) =>
                         $record->status === Enrollment::STATUS_COMPLETED &&
                             !$record->certificate_issued
+                    ),
+
+                Tables\Actions\Action::make('preview_certificate')
+                    ->label('Preview Certificate')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn(Enrollment $record) =>
+                        $record->certificate_issued && $record->course
+                            ? route('certificates.preview', $record->course)
+                            : '#'
+                    )
+                    ->openUrlInNewTab()
+                    ->visible(fn(Enrollment $record) =>
+                        $record->certificate_issued && $record->course
+                    ),
+
+                Tables\Actions\Action::make('view_certificate')
+                    ->label('View Certificate')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->url(fn(Enrollment $record) =>
+                        $record->certificate_issued && $record->course
+                            ? route('certificates.show', $record->course)
+                            : '#'
+                    )
+                    ->openUrlInNewTab()
+                    ->visible(fn(Enrollment $record) =>
+                        $record->certificate_issued && $record->course
                     ),
             ])
             ->bulkActions([
@@ -393,6 +441,33 @@ class EnrollmentResource extends Resource
                                 $record->update(['status' => Enrollment::STATUS_ACTIVE]);
                             }
                         }),
+
+                    Tables\Actions\BulkAction::make('issue_certificates')
+                        ->label('Issue Certificates')
+                        ->icon('heroicon-o-academic-cap')
+                        ->color('primary')
+                        ->requiresConfirmation()
+                        ->modalHeading('Issue Certificates')
+                        ->modalDescription('This will issue certificates for all selected completed enrollments that don\'t have certificates yet.')
+                        ->action(function ($records) {
+                            $certificateService = app(CertificateService::class);
+                            $issuedCount = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->status === Enrollment::STATUS_COMPLETED && !$record->certificate_issued) {
+                                    if ($certificateService->issueCertificate($record)) {
+                                        $issuedCount++;
+                                    }
+                                }
+                            }
+
+                            \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Certificates Issued')
+                                ->body("Successfully issued {$issuedCount} certificates.")
+                                ->send();
+                        })
+                        ->visible(fn() => true),
                 ]),
             ])
             ->defaultSort('enrolled_at', 'desc');

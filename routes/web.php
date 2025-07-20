@@ -7,6 +7,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\MpesaCallbackController;
+use App\Http\Controllers\CertificateController;
 use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/courses/{course}/exam/{exam}/submit', [CourseController::class, 'submitExam'])->name('courses.exam.submit');
     Route::get('/courses/{course}/certificate/download', [CourseController::class, 'downloadCertificate'])
         ->name('courses.certificate.download');
+
+    // Certificate Routes
+    Route::get('/certificates/{course}', [CertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/certificates/{course}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::get('/certificate/verify/{certificateNumber}', [CertificateController::class, 'verify'])->name('certificate.verify');
+    Route::get('/certificates/{course}/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
 });
 
 // Checkout Routes

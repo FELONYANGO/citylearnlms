@@ -18,11 +18,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Order;
 use App\Models\Exam;
+use App\Services\CertificateService;
 
 class CourseController extends Controller
 {
-    public function __construct()
+    protected $certificateService;
+
+    public function __construct(CertificateService $certificateService)
     {
+        $this->certificateService = $certificateService;
+
         // Show page is public
         $this->middleware('auth')->except(['show']);
 
@@ -765,6 +770,32 @@ class CourseController extends Controller
                 'message' => 'Failed to mark as completed'
             ], 500);
         }
+    }
+
+    public function downloadCertificate(Request $request, Course $course)
+    {
+        // Check if user is enrolled and has completed the course
+        $enrollment = Auth::user()->enrollments()
+            ->where('course_id', $course->id)
+            ->where('status', Enrollment::STATUS_COMPLETED)
+            ->first();
+
+        if (!$enrollment) {
+            return redirect()->route('courses.learn', $course)
+                ->with('error', 'You must complete the course to download your certificate.');
+        }
+
+        // Issue certificate if not already issued
+        if (!$enrollment->certificate_issued) {
+            $this->certificateService->issueCertificate($enrollment);
+            $enrollment->refresh();
+        }
+
+        $certificateData = $this->certificateService->generateCertificateData($enrollment);
+
+        return view('certificates.templates.classic', [
+            'certificateData' => $certificateData
+        ]);
     }
 
     public function trackProgress(Request $request, Course $course)

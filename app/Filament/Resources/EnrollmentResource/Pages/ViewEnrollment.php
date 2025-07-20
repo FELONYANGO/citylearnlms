@@ -8,6 +8,7 @@ use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use App\Services\CertificateService;
 
 class ViewEnrollment extends ViewRecord
 {
@@ -44,14 +45,23 @@ class ViewEnrollment extends ViewRecord
                 ->modalHeading('Issue Certificate')
                 ->modalDescription('This will generate and issue a certificate for this enrollment.')
                 ->action(function () {
-                    $certificateNumber = 'CERT-' . strtoupper(uniqid());
-                    $this->record->issueCertificate($certificateNumber);
+                    $certificateService = app(CertificateService::class);
+                    $success = $certificateService->issueCertificate($this->record);
 
-                    Notification::make()
-                        ->success()
-                        ->title('Certificate Issued')
-                        ->body("Certificate number: {$certificateNumber}")
-                        ->send();
+                    if ($success) {
+                        $this->record->refresh();
+                        Notification::make()
+                            ->success()
+                            ->title('Certificate Issued')
+                            ->body("Certificate number: {$this->record->certificate_number}")
+                            ->send();
+                    } else {
+                        Notification::make()
+                            ->danger()
+                            ->title('Certificate Issue Failed')
+                            ->body('Failed to issue certificate. Please try again.')
+                            ->send();
+                    }
                 })
                 ->visible(
                     fn() =>
@@ -59,13 +69,50 @@ class ViewEnrollment extends ViewRecord
                         !$this->record->certificate_issued
                 ),
 
+            Action::make('preview_certificate')
+                ->label('Preview Certificate')
+                ->icon('heroicon-o-eye')
+                ->color('info')
+                ->url(
+                    fn() =>
+                    $this->record->certificate_issued && $this->record->course
+                        ? route('certificates.preview', $this->record->course)
+                        : '#'
+                )
+                ->openUrlInNewTab()
+                ->visible(
+                    fn() =>
+                    $this->record->certificate_issued && $this->record->course
+                ),
+
+            Action::make('view_certificate')
+                ->label('View Certificate')
+                ->icon('heroicon-o-document-text')
+                ->color('success')
+                ->url(
+                    fn() =>
+                    $this->record->certificate_issued && $this->record->course
+                        ? route('certificates.show', $this->record->course)
+                        : '#'
+                )
+                ->openUrlInNewTab()
+                ->visible(
+                    fn() =>
+                    $this->record->certificate_issued && $this->record->course
+                ),
+
             Action::make('download_certificate')
                 ->label('Download Certificate')
                 ->icon('heroicon-o-document-arrow-down')
-                ->color('info')
-                ->url(fn() => $this->record->certificate_issued ? route('certificate.download', $this->record->id) : '#')
+                ->color('warning')
+                ->url(
+                    fn() =>
+                    $this->record->certificate_issued && $this->record->course
+                        ? route('certificates.download', $this->record->course)
+                        : '#'
+                )
                 ->openUrlInNewTab()
-                ->visible(fn() => $this->record->certificate_issued),
+                ->visible(fn() => $this->record->certificate_issued && $this->record->course),
 
             Action::make('send_reminder')
                 ->label('Send Reminder')
