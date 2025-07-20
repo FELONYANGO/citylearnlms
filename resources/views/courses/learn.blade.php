@@ -340,7 +340,9 @@ use Illuminate\Support\Facades\Storage;
 
     {{-- Main Content Area --}}
     <div class="flex-1 flex flex-col min-h-screen">
-        @if($currentQuiz)
+        @if($currentExam)
+        @include('courses.partials.exam', ['exam' => $currentExam])
+        @elseif($currentQuiz)
         @include('courses.partials.quiz', ['quiz' => $currentQuiz])
         @elseif($currentItem)
         {{-- Header --}}

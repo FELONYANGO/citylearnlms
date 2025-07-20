@@ -43,6 +43,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/courses/{course}/curriculum-item/{curriculumItem}/complete', [CourseController::class, 'markCurriculumItemComplete'])->name('courses.curriculum-item.complete');
     Route::post('/courses/{course}/track-progress', [CourseController::class, 'trackProgress'])->name('courses.track-progress');
     Route::get('/courses/{course}/exam/{exam}', [CourseController::class, 'showExam'])->name('courses.exam');
+    Route::post('/courses/{course}/exam/{exam}/submit', [CourseController::class, 'submitExam'])->name('courses.exam.submit');
     Route::get('/courses/{course}/certificate/download', [CourseController::class, 'downloadCertificate'])
         ->name('courses.certificate.download');
 });

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Order;
+use App\Models\Exam;
 
 class CourseController extends Controller
 {
@@ -68,6 +69,18 @@ class CourseController extends Controller
         }
 
         return view('courses.show', compact('course', 'userState'));
+    }
+
+    public function showExam(Course $course, Exam $exam)
+    {
+        // Verify exam belongs to course
+        abort_if($exam->course_id !== $course->id, 404);
+
+        // Redirect to learning page with exam parameter
+        return redirect()->route('courses.learn', [
+            'course' => $course,
+            'exam' => $exam->id
+        ]);
     }
 
     public function enroll(Request $request, Course $course)
@@ -190,6 +203,14 @@ class CourseController extends Controller
             ->where('user_id', auth()->id())
             ->first();
 
+        // Handle exam parameter
+        $currentExam = null;
+        if (request('exam')) {
+            $currentExam = Exam::with('quizzes.questions.options')->findOrFail(request('exam'));
+            // Verify exam belongs to course
+            abort_if($currentExam->course_id !== $course->id, 404);
+        }
+
         // Create navigation sequence (curriculum items + quizzes in order)
         $navigationSequence = [];
         foreach ($curriculumItems as $item) {
@@ -212,15 +233,44 @@ class CourseController extends Controller
             }
         }
 
+        // Add exam to navigation sequence if it exists
+        if ($exam) {
+            $navigationSequence[] = [
+                'type' => 'exam',
+                'id' => $exam->id,
+                'title' => $exam->title ?? 'Final Exam',
+                'url' => route('courses.learn', ['course' => $course, 'exam' => $exam->id])
+            ];
+        }
+
         // Get current item or quiz and find navigation position
         $currentItem = null;
         $currentQuiz = null;
+        $currentExam = null;
         $quizResult = null;
+        $examResult = null;
         $currentPosition = 0;
         $previousNav = null;
         $nextNav = null;
 
-        if (request('quiz')) {
+        if (request('exam')) {
+            $currentExam = Exam::with('quizzes.questions.options')->findOrFail(request('exam'));
+            // Verify exam belongs to course
+            abort_if($currentExam->course_id !== $course->id, 404);
+
+            // Check if we have exam result in session
+            if (request('completed') && session('exam_result')) {
+                $examResult = session('exam_result');
+            }
+
+            // Find current position in navigation sequence
+            foreach ($navigationSequence as $index => $navItem) {
+                if ($navItem['type'] === 'exam' && $navItem['id'] == $currentExam->id) {
+                    $currentPosition = $index;
+                    break;
+                }
+            }
+        } elseif (request('quiz')) {
             $currentQuiz = Quiz::with('questions.options')->findOrFail(request('quiz'));
             $currentItem = $curriculumItems->firstWhere('id', $currentQuiz->curriculum_item_id);
 
@@ -266,9 +316,11 @@ class CourseController extends Controller
             'certificate',
             'currentItem',
             'currentQuiz',
+            'currentExam',
             'completions',
             'quizAttempts',
             'quizResult',
+            'examResult',
             'navigationSequence',
             'previousNav',
             'nextNav'
@@ -351,6 +403,20 @@ class CourseController extends Controller
             ->where('user_id', auth()->id())
             ->first();
 
+        // Add exam to navigation sequence if it exists
+        if ($exam) {
+            $navigationSequence[] = [
+                'type' => 'exam',
+                'id' => $exam->id,
+                'title' => $exam->title ?? 'Final Exam',
+                'url' => route('courses.learn', ['course' => $course, 'exam' => $exam->id])
+            ];
+        }
+
+        // Initialize exam-related variables
+        $currentExam = null;
+        $examResult = null;
+
         return view('courses.learn', compact(
             'course',
             'curriculumItems',
@@ -358,9 +424,11 @@ class CourseController extends Controller
             'certificate',
             'currentItem',
             'currentQuiz',
+            'currentExam',
             'completions',
             'quizAttempts',
             'quizResult',
+            'examResult',
             'navigationSequence',
             'previousNav',
             'nextNav'
@@ -375,6 +443,123 @@ class CourseController extends Controller
             ->firstOrFail();
 
         return view('courses.checkout', compact('course', 'enrollment'));
+    }
+
+    public function submitExam(Request $request, Course $course, Exam $exam)
+    {
+        try {
+            // Verify exam belongs to course
+            abort_if($exam->course_id !== $course->id, 404);
+
+            // Verify user is enrolled
+            $enrollment = auth()->user()->enrollments()
+                ->where('course_id', $course->id)
+                ->where('status', 'active')
+                ->firstOrFail();
+
+            // Validate answers
+            $validator = Validator::make($request->all(), [
+                'answers' => 'required|array',
+                'answers.*' => 'required|array',
+                'answers.*.*' => 'required|exists:quiz_options,id'
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('error', 'Please answer all questions.');
+            }
+
+            // Load exam with quizzes, questions and options
+            $exam->load(['quizzes.questions.options']);
+
+            // Validate that exam has quizzes
+            if ($exam->quizzes->isEmpty()) {
+                return redirect()->back()
+                    ->with('error', 'This exam has no quizzes. Please contact the administrator.');
+            }
+
+            // Calculate overall score
+            $totalQuestions = 0;
+            $totalCorrectAnswers = 0;
+            $detailedAnswers = [];
+
+            foreach ($exam->quizzes as $quiz) {
+                foreach ($quiz->questions as $question) {
+                    $totalQuestions++;
+                    $userAnswerId = $request->answers[$quiz->id][$question->id] ?? null;
+                    $correctOption = $question->options->where('is_correct', true)->first();
+                    $userOption = $question->options->where('id', $userAnswerId)->first();
+
+                    $isCorrect = $correctOption && $userOption && $correctOption->id == $userOption->id;
+                    if ($isCorrect) {
+                        $totalCorrectAnswers++;
+                    }
+
+                    $detailedAnswers[] = [
+                        'quiz_id' => $quiz->id,
+                        'question_id' => $question->id,
+                        'question_text' => $question->question_text,
+                        'user_answer_id' => $userAnswerId,
+                        'user_answer_text' => $userOption ? $userOption->option_text : null,
+                        'correct_answer_id' => $correctOption ? $correctOption->id : null,
+                        'correct_answer_text' => $correctOption ? $correctOption->option_text : null,
+                        'is_correct' => $isCorrect
+                    ];
+                }
+            }
+
+            $score = $totalQuestions > 0 ? round(($totalCorrectAnswers / $totalQuestions) * 100) : 0;
+            $passed = $exam->passing_score ? $score >= $exam->passing_score : $score >= 70;
+
+            // Create exam attempt record
+            DB::transaction(function () use ($exam, $score, $detailedAnswers) {
+                // You might want to create an ExamAttempt model for this
+                // For now, we'll just update the enrollment
+                $enrollment = auth()->user()->enrollments()
+                    ->where('course_id', $exam->course_id)
+                    ->where('status', 'active')
+                    ->first();
+
+                if ($enrollment) {
+                    $enrollment->update([
+                        'progress_percentage' => 100,
+                        'last_accessed_at' => now()
+                    ]);
+
+                    // If passed, mark as completed
+                    if ($score >= ($exam->passing_score ?? 70)) {
+                        $enrollment->markAsCompleted();
+                    }
+                }
+            });
+
+            // Redirect with results
+            return redirect()->route('courses.learn', [
+                'course' => $course,
+                'exam' => $exam->id,
+                'completed' => true
+            ])->with('exam_result', [
+                'score' => $score,
+                'passed' => $passed,
+                'correct_answers' => $totalCorrectAnswers,
+                'total_questions' => $totalQuestions,
+                'passing_score' => $exam->passing_score ?? 70,
+                'detailed_answers' => $detailedAnswers
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Exam submission failed', [
+                'course_id' => $course->id,
+                'exam_id' => $exam->id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'An error occurred while submitting the exam. Please try again.');
+        }
     }
 
     public function submitQuiz(Request $request, Course $course, Quiz $quiz)

@@ -20,17 +20,27 @@ class RecentActivitiesWidget extends Widget
         $activities = collect();
 
         // Get recent enrollments
-        $recentEnrollments = Enrollment::with(['user', 'course'])
+        $recentEnrollments = Enrollment::with(['user', 'course', 'trainingProgram'])
             ->latest()
             ->take(5)
             ->get();
 
         foreach ($recentEnrollments as $enrollment) {
+            // Determine what the user enrolled in
+            $enrolledIn = null;
+            if ($enrollment->course) {
+                $enrolledIn = $enrollment->course->title;
+            } elseif ($enrollment->trainingProgram) {
+                $enrolledIn = $enrollment->trainingProgram->title;
+            } else {
+                $enrolledIn = 'Unknown Course/Program';
+            }
+
             $activities->push([
                 'type' => 'enrollment',
                 'icon' => 'heroicon-o-user-plus',
                 'color' => 'success',
-                'title' => $enrollment->user->name . ' enrolled in ' . $enrollment->course->title,
+                'title' => $enrollment->user->name . ' enrolled in ' . $enrolledIn,
                 'time' => $enrollment->created_at->diffForHumans(),
                 'timestamp' => $enrollment->created_at,
             ]);
@@ -70,18 +80,28 @@ class RecentActivitiesWidget extends Widget
         }
 
         // Get completed enrollments
-        $completedEnrollments = Enrollment::with(['user', 'course'])
+        $completedEnrollments = Enrollment::with(['user', 'course', 'trainingProgram'])
             ->where('status', 'completed')
             ->latest()
             ->take(5)
             ->get();
 
         foreach ($completedEnrollments as $enrollment) {
+            // Determine what the user completed
+            $completedIn = null;
+            if ($enrollment->course) {
+                $completedIn = $enrollment->course->title;
+            } elseif ($enrollment->trainingProgram) {
+                $completedIn = $enrollment->trainingProgram->title;
+            } else {
+                $completedIn = 'Unknown Course/Program';
+            }
+
             $activities->push([
                 'type' => 'course_completion',
                 'icon' => 'heroicon-o-trophy',
                 'color' => 'warning',
-                'title' => $enrollment->user->name . ' completed ' . $enrollment->course->title,
+                'title' => $enrollment->user->name . ' completed ' . $completedIn,
                 'time' => $enrollment->updated_at->diffForHumans(),
                 'timestamp' => $enrollment->updated_at,
             ]);
