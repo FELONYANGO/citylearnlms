@@ -22,6 +22,10 @@ class CertificatesRelationManager extends RelationManager
                 Forms\Components\Select::make('user_id')
                     ->relationship('user', 'name')
                     ->required(),
+                Forms\Components\Select::make('template_id')
+                    ->label('Certificate Template')
+                    ->relationship('template', 'name')
+                    ->required(),
                 Forms\Components\TextInput::make('certificate_number')
                     ->required()
                     ->maxLength(255),
