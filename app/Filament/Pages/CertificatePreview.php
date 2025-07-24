@@ -18,7 +18,7 @@ class CertificatePreview extends Page
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
-    protected static ?string $navigationGroup = 'Certificates';
+    protected static ?string $navigationGroup = 'Certificate Management';
     protected static ?string $title = 'Certificate Preview';
     protected static ?string $slug = 'certificate-preview';
     protected static ?int $navigationSort = 1;
