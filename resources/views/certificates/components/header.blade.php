@@ -6,3 +6,4 @@
     <div class="organization-name">{{ $organizationName ?? 'Training Academy' }}</div>
     <div class="organization-tagline">{{ $organizationTagline ?? 'Excellence in Education' }}</div>
 </div>
+

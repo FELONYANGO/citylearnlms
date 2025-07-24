@@ -43,14 +43,6 @@ class CertificateTemplateResource extends Resource
                         ->default(true),
                 ]),
 
-                FileUpload::make('file_path')
-                    ->label('Template File')
-                    ->directory('certificate-templates')
-                    ->acceptedFileTypes(['html', 'pdf'])
-                    ->maxSize(10240)
-                    ->helperText('Upload HTML or PDF template file')
-                    ->nullable(),
-
                 Textarea::make('html_content')
                     ->label('HTML Content')
                     ->rows(10)
@@ -90,10 +82,6 @@ class CertificateTemplateResource extends Resource
                         'danger' => false,
                     ])
                     ->sortable(),
-
-                TextColumn::make('file_path')
-                    ->label('File')
-                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('certificates_count')
                     ->label('Certificates')

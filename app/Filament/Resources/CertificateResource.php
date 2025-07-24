@@ -33,11 +33,9 @@ class CertificateResource extends Resource
         return $form->schema([
             Section::make('Certificate Details')->schema([
                 Grid::make(2)->schema([
-                    Select::make('user_id')
-                        ->relationship('user', 'name')
+                    TextInput::make('name')
                         ->required()
-                        ->searchable()
-                        ->preload(),
+                        ->maxLength(255),
 
                     Select::make('template_id')
                         ->label('Certificate Template')
@@ -50,32 +48,25 @@ class CertificateResource extends Resource
                 Grid::make(2)->schema([
                     Select::make('course_id')
                         ->relationship('course', 'title')
-                        ->searchable()
-                        ->preload()
-                        ->nullable(),
-
-                    Select::make('program_id')
-                        ->label('Training Program')
-                        ->relationship('trainingProgram', 'title')
-                        ->searchable()
-                        ->preload()
-                        ->nullable(),
-                ]),
-
-                Grid::make(2)->schema([
-                    TextInput::make('certificate_number')
                         ->required()
-                        ->maxLength(255),
-
-                    DateTimePicker::make('issued_at')
-                        ->required()
-                        ->default(now()),
+                        ->searchable()
+                        ->preload(),
                 ]),
 
                 Textarea::make('notes')
                     ->rows(3)
                     ->maxLength(1000)
                     ->nullable(),
+
+                Forms\Components\KeyValue::make('metadata')
+                    ->label('Metadata')
+                    ->keyLabel('Key')
+                    ->valueLabel('Value')
+                    ->nullable(),
+
+                Forms\Components\Toggle::make('is_active')
+                    ->label('Active')
+                    ->default(true),
             ]),
         ]);
     }
@@ -84,12 +75,7 @@ class CertificateResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('certificate_number')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('user.name')
-                    ->label('Recipient')
+                TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
@@ -101,25 +87,14 @@ class CertificateResource extends Resource
                 TextColumn::make('course.title')
                     ->label('Course')
                     ->searchable()
-                    ->sortable()
-                    ->toggleable(),
+                    ->sortable(),
 
-                TextColumn::make('trainingProgram.title')
-                    ->label('Training Program')
-                    ->searchable()
-                    ->sortable()
-                    ->toggleable(),
-
-                BadgeColumn::make('is_generated')
-                    ->label('Generated')
+                BadgeColumn::make('is_active')
+                    ->label('Status')
                     ->colors([
                         'success' => true,
                         'danger' => false,
                     ])
-                    ->sortable(),
-
-                TextColumn::make('issued_at')
-                    ->dateTime()
                     ->sortable(),
 
                 TextColumn::make('created_at')
@@ -140,7 +115,7 @@ class CertificateResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('issued_at', 'desc');
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getRelations(): array

@@ -17,15 +17,24 @@ class CertificatesRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
+                Forms\Components\TextInput::make('name')
                     ->required(),
                 Forms\Components\Select::make('template_id')
                     ->label('Certificate Template')
                     ->relationship('template', 'name')
                     ->required(),
-                Forms\Components\DateTimePicker::make('issued_at')->required(),
-                Forms\Components\TextInput::make('certificate_number')->required(),
+                Forms\Components\KeyValue::make('metadata')
+                    ->label('Metadata')
+                    ->keyLabel('Key')
+                    ->valueLabel('Value')
+                    ->nullable(),
+                Forms\Components\Textarea::make('notes')
+                    ->rows(3)
+                    ->maxLength(1000)
+                    ->nullable(),
+                Forms\Components\Toggle::make('is_active')
+                    ->label('Active')
+                    ->default(true),
             ]);
     }
 
@@ -33,11 +42,18 @@ class CertificatesRelationManager extends RelationManager
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')->label('Recipient'),
-                Tables\Columns\TextColumn::make('issued_at')->dateTime(),
-                Tables\Columns\TextColumn::make('certificate_number'),
+                Tables\Columns\TextColumn::make('name')->label('Certificate Name'),
+                Tables\Columns\TextColumn::make('template.name')->label('Template'),
+                Tables\Columns\BadgeColumn::make('is_active')
+                    ->label('Status')
+                    ->colors([
+                        'success' => true,
+                        'danger' => false,
+                    ]),
             ])
-            ->headerActions([Tables\Actions\CreateAction::make()])
+            ->headerActions([
+                Tables\Actions\AttachAction::make(),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

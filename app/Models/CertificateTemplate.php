@@ -12,7 +12,6 @@ class CertificateTemplate extends Model
 
     protected $fillable = [
         'name',
-        'file_path',
         'html_content',
         'configuration',
         'placeholders',
